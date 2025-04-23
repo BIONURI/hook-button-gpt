@@ -1,110 +1,132 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>GPT 후킹멘트 버튼 자동 생성기</title>
   <style>
-    body { font-family: sans-serif; padding: 30px; max-width: 640px; margin: auto; }
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      max-width: 640px;
+      margin: auto;
+    }
     input, textarea, select, button {
-      width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-    textarea { height: 80px; resize: none; }
+    textarea {
+      height: 80px;
+      resize: none;
+    }
     button {
-      background: #e53935; color: #fff; font-weight: bold;
-      border: none; cursor: pointer;
+      background: #e53935;
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
     }
-    button:hover { background: #c62828; }
+    button:hover {
+      background: #c62828;
+    }
     .hook-option {
-      background: #f1f1f1; margin-bottom: 10px; padding: 10px; border-radius: 6px;
-      border: 1px solid #ddd; cursor: pointer;
+      background: #f1f1f1;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      cursor: pointer;
     }
-    .hook-option:hover { background: #e0e0e0; }
+    .hook-option:hover {
+      background: #e0e0e0;
+    }
   </style>
 </head>
 <body>
+  <h2>🔥 GPT 후킹멘트 + 버튼 자동 생성기</h2>
 
-  <h2>🔥 GPT 후킹멘트 3종 + 버튼 자동 생성기</h2>
+  <label>링크 제목</label>
+  <input type="text" id="title" placeholder="예: 3.3% 환급 신청하러 가기" />
 
-  <input type="text" id="linkTitle" placeholder="링크 제목 (예: 기한후 신고 가산세)">
-  <input type="url" id="linkUrl" placeholder="이동할 URL 입력">
+  <label>링크 주소 (URL)</label>
+  <input type="text" id="url" placeholder="https://yourblog.tistory.com/entry/..." />
 
-  <label>버튼 색상 선택:</label>
-  <select id="colorSelect">
-    <option value="btn-red">🔴 빨강</option>
-    <option value="btn-blue">🔵 파랑</option>
-    <option value="btn-green">🟢 초록</option>
-    <option value="btn-orange">🟠 주황</option>
-  </select>
+  <label>후킹멘트 (클릭 유도 문구)</label>
+  <textarea id="hook" placeholder="예: 지금 환급받지 않으면 손해입니다!"></textarea>
 
-  <label>링크 종류:</label>
-  <select id="targetSelect">
+  <label>링크 종류</label>
+  <select id="linkType">
+    <option value="_self">📄 내부 링크 (현재 창)</option>
     <option value="_blank">🌐 외부 링크 (새 창)</option>
-    <option value="_self">📝 내부 링크 (현재 창)</option>
   </select>
 
-  <button onclick="generateHooks()">💡 후킹멘트 생성</button>
+  <label>버튼 색상 선택</label>
+  <select id="colorClass">
+    <option value="btn-red">🔴 빨강 (기한후신고)</option>
+    <option value="btn-blue">🔵 파랑 (연말정산)</option>
+    <option value="btn-orange">🟠 주황 (프리랜서)</option>
+  </select>
 
-  <div id="hookOptions"><h4>✅ 후킹멘트 선택:</h4></div>
+  <button onclick="generate()">📋 버튼 HTML 생성</button>
 
-  <textarea id="htmlResult" placeholder="✅ 최종 버튼 HTML이 여기에 생성됩니다"></textarea>
-  <button onclick="copyHtml()">📋 버튼 HTML 복사</button>
+  <label>📦 생성된 HTML 코드</label>
+  <textarea id="result" readonly></textarea>
 
   <script>
-    async function generateHooks() {
-      const title = document.getElementById("linkTitle").value.trim();
-      if (!title) return alert("링크 제목을 입력하세요!");
+    function generate() {
+      const title = document.getElementById("title").value.trim();
+      const url = document.getElementById("url").value.trim();
+      const hook = document.getElementById("hook").value.trim();
+      const linkType = document.getElementById("linkType").value;
+      const colorClass = document.getElementById("colorClass").value;
 
-      const prompt = `
-[주제] ${title}
-1. 메인키워드와 서브키워드를 조합해 클릭 유도 후킹멘트를 작성해줘.
-2. 고단가 키워드 강조, 이모지 포함, 감정 자극, 한 문장.
-3. 3개 줄바꿈으로 구분해서 제시해줘.
-`;
-
-      const res = await fetch("https://gpt-hook-proxy.vercel.app/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-
-      const data = await res.json();
-      const raw = data.content || data.choices?.[0]?.message?.content;
-      const cleaned = raw?.replace(/^- /gm, '').replace(/\r/g, '').trim();
-      const options = cleaned?.split(/\n+/).filter(Boolean);
-
-      const container = document.getElementById("hookOptions");
-      container.innerHTML = "<h4>✅ 후킹멘트 선택:</h4>";
-      options?.forEach(text => {
-        const div = document.createElement("div");
-        div.className = "hook-option";
-        div.innerText = text;
-        div.onclick = () => applyHook(text);
-        container.appendChild(div);
-      });
-    }
-
-    function applyHook(hookText) {
-      const url = document.getElementById("linkUrl").value.trim();
-      const color = document.getElementById("colorSelect").value;
-      const target = document.getElementById("targetSelect").value;
-
-      if (!url) return alert("링크 URL을 입력해주세요!");
-
-      const html = `<a href="${url}" class="cta-button ${color}" target="${target}" rel="nofollow noopener">${hookText}</a>`;
-      document.getElementById("htmlResult").value = html;
-    }
-
-    function copyHtml() {
-      const html = document.getElementById("htmlResult");
-      html.select();
-      document.execCommand("copy");
-      alert("✅ 복사 완료! 티스토리 HTML 모드에 붙여넣으세요.");
+      const html = `<a class="cta-button ${colorClass}" href="${url}" target="${linkType}" rel="nofollow noopener">👉 ${hook} ${title}</a>`;
+      document.getElementById("result").value = html;
     }
   </script>
 
+  <style>
+    .cta-button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 600px;
+      padding: 15px 30px;
+      color: #fff !important;
+      font-weight: bold;
+      font-size: 16px;
+      text-decoration: none;
+      border-radius: 999px;
+      box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.1);
+      white-space: nowrap;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-red {
+      background-color: #e53935;
+    }
+    .btn-red:hover {
+      background-color: #c62828;
+    }
+    .btn-blue {
+      background-color: #1976d2;
+    }
+    .btn-blue:hover {
+      background-color: #115293;
+    }
+    .btn-orange {
+      background-color: #fb8c00;
+    }
+    .btn-orange:hover {
+      background-color: #ef6c00;
+    }
+  </style>
 </body>
 </html>
